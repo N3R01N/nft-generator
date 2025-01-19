@@ -26,7 +26,7 @@ async function generateUniqueTraits(traitFolders, config) {
 
     const key = chosenTraits.join(";");
 
-    if (!generatedCombinations.has(key)) {
+    if (!generatedCombinations.has(key) && !hasTooManyTraitsAlready(chosenTraits, config.numImages)) {
       uniqueCombination = true;
       generatedCombinations.add(key);
     }
@@ -35,13 +35,28 @@ async function generateUniqueTraits(traitFolders, config) {
   return chosenTraits;
 }
 
-// Calculate the total combinations possible
-async function calculateTotalCombinations(config) {
-  return config.traitFolders.reduce(async (acc, folder) => {
-    const traitPath = join(config.traitsFolder, folder);
-    const traitChoices = await fs.readdir(traitPath);
-    return acc * traitChoices.length;
-  }, 1);
+function hasTooManyTraitsAlready(newTraits, totalNumImages){
+  const maxImages = getPercentages(newTraits).map(p=> p*totalNumImages/100);
+  const traitKeyArray = Array.from(generatedCombinations).map(combo => combo.split(';'))
+
+  for(let i = 0 ; i < newTraits.length; i++){
+    console.log(traitKeyArray)
+    const count = traitKeyArray.length 
+      ? traitKeyArray.map(traits => traits[i])
+        .filter(key => key === newTraits[i]).length 
+      : 0;
+    if(count >= maxImages[i]){
+      console.log('zu viel ' + newTraits[i] + ' count:' + count + ' max: ' + maxImages[i])
+      return true;
+    }
+  }
+  return false;
 }
 
-export { generateUniqueTraits, calculateTotalCombinations };
+function getPercentages(chosenTraits){
+  return chosenTraits
+    .map(str => str.split('#'))
+    .map(traitArray => traitArray[1] ? +traitArray[1].split('.')[0] : 100);
+}
+
+export { generateUniqueTraits }

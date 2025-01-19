@@ -4,7 +4,7 @@ export default {
   outputFolder: "output",                   // folder name for saving generated NFTs
 
   layersNumber: 3,      // number of image layers to combine
-  numImages: 10000,     // total number of NFTs to generate
+  numImages: 8,     // total number of NFTs to generate
   startAt: 0,           // index number to start generating NFTs at ( 0 or 1 )
 
   imageWidth: 600,      // width of generated image

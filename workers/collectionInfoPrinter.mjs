@@ -1,14 +1,6 @@
+import { calculateTotalCombinations } from "./utils.mjs";
 import { readdirSync } from 'fs';
 import { join } from 'path';
-
-// Calculate the total combinations possible
-function calculateTotalCombinations(config) {
-    return config.traitFolders.reduce((acc, folder) => {
-        const traitPath = join(config.traitsFolder, folder); // Use path.join() instead of join()
-        const traitChoices = readdirSync(traitPath);
-        return acc * traitChoices.length;
-    }, 1);
-}
 
 // Print the details of the collection
 function printCollectionInfo(config) {

@@ -1,4 +1,4 @@
-import fs from 'fs';
+import fs, { stat } from 'fs';
 import path from 'path';
 import { loadImage, createCanvas } from 'canvas';
 import GIFEncoder from 'gifencoder';
@@ -8,13 +8,13 @@ import { execSync } from 'child_process';
 import pLimit from 'p-limit';
 
 import printHeader from './workers/bankkroll.mjs';
+import { calculateTotalCombinations } from './workers/utils.mjs';
 import printCollectionInfo from "./workers/collectionInfoPrinter.mjs";
 import { logSuccess, logError, logRegular } from "./workers/consoleLogger.mjs";
 import { extractFrames } from './workers/extractFrames.mjs';
-import { generateUniqueTraits, calculateTotalCombinations } from './workers/combinations.mjs';
+import { generateUniqueTraits } from './workers/combinations.mjs';
 import ora from 'ora';
 import chalk from 'chalk';
-
 
 // Create a delay
 function delay(ms) {
@@ -37,7 +37,7 @@ async function main() {
     // Print the header and collection info to the console
     printHeader();
     await delay(1500);
-
+ 
     // Prompt the user to enter the desired processing intensity
     const { machineStrength } = await inquirer.prompt({
       type: 'list',
@@ -54,7 +54,7 @@ async function main() {
     });
 
     const limit = pLimit(machineStrength);
-
+    
     // Prompt the user to choose between generating GIFs or images
     const answer = await inquirer.prompt({
       type: 'list',
@@ -62,11 +62,15 @@ async function main() {
       message: chalk.cyan('Do you want to generate GIFs or Images?'),
       choices: ['GIFs', 'Images']
     });
+    
     const choice = answer.choice.charAt(0);
     const fileType = choice.toUpperCase() === 'G' ? 'GIFs' : 'Images';
 
+
+
     // Calculate the total number of possible combinations of traits
     const totalCombinations = calculateTotalCombinations(config);
+    console.log(config.numImages + ' > ' + totalCombinations)
 
     if (config.numImages > totalCombinations) {
       logError(`Requested number of files (${config.numImages}) exceeds the total possible combinations (${totalCombinations}). Please lower the number of files to generate.`);
@@ -117,7 +121,7 @@ async function main() {
     logSuccess(`All ${fileType} generated successfully!`);
 
     await delay(1000);
-
+  
     // Prompt the user to choose whether to upload to IPFS or not
     const ipfsAnswer = await inquirer.prompt({
       type: 'list',
@@ -131,6 +135,7 @@ async function main() {
       const cmd = `npx thirdweb@latest upload ${folderPath}`;
       execSync(cmd, { stdio: 'inherit' });
     } else {
+ 
       const loadingSpinner = ora({
         text: `Skipping IPFS upload.`,
         color: 'cyan',
@@ -138,7 +143,8 @@ async function main() {
       }).start();
       await delay(1000);
       loadingSpinner.succeed(`IPFS upload skipped.`);
-    }
+  }
+   
 
     printHeader();
 
@@ -236,6 +242,7 @@ async function generateGif(i, config) {
     const traits = [];
     const traitFrames = [];
 
+
     // Loop over all trait folders and use the chosen unique traits
     for (let j = 0; j < config.traitFolders.length; j++) {
       const traitFolder = config.traitFolders[j];
@@ -311,11 +318,10 @@ async function generateGif(i, config) {
 
     logRegular(`JSON metadata: ${outputJsonPath}`);
     logRegular(`GIF file: ${outputGifPath}`);
+   
   } catch (err) {
     logError(`Failed to generate GIF ${i + config.startAt}: ${err.message}`);
   }
 }
-
-
 
 main();
