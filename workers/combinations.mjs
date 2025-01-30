@@ -6,7 +6,9 @@ const generatedCombinations = new Set();
 
 // Returns a random trait from each folder
 function randomChoice(array) {
-  return array[Math.floor(Math.random() * array.length)];
+  const percentages = getPercentages(array);
+  const normalizedPercentages = normalizeArray(percentages);
+  return weightedRandomPick(array, normalizedPercentages);
 }
 
 // Checks to make sure the trait is unique
@@ -40,7 +42,6 @@ function hasTooManyTraitsAlready(newTraits, totalNumImages){
   const traitKeyArray = Array.from(generatedCombinations).map(combo => combo.split(';'))
 
   for(let i = 0 ; i < newTraits.length; i++){
-    console.log(traitKeyArray)
     const count = traitKeyArray.length 
       ? traitKeyArray.map(traits => traits[i])
         .filter(key => key === newTraits[i]).length 
@@ -57,6 +58,24 @@ function getPercentages(chosenTraits){
   return chosenTraits
     .map(str => str.split('#'))
     .map(traitArray => traitArray[1] ? +traitArray[1].split('.')[0] : 100);
+}
+
+function weightedRandomPick(choices, percentages){
+  const rand = Math.random() * 100;
+
+    // Calculate the cumulative probability
+    let cumulativeProbability = 0;
+    for (let i = 0; i < choices.length; i++) {
+        cumulativeProbability += percentages[i];
+        if (rand <= cumulativeProbability) {
+            return choices[i];
+        }
+    }
+}
+
+function normalizeArray(arr) {
+  const sum = arr.reduce((a, b) => a + b, 0);
+  return arr.map(x => (x / sum) * 100);
 }
 
 export { generateUniqueTraits }
