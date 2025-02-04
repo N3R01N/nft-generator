@@ -3,6 +3,7 @@ import { join } from 'path';
 import { readDir } from './utils.mjs';
 
 const generatedCombinations = new Set();
+let usedupTraits = [];
 
 // Returns a random trait from each folder
 function randomChoice(array) {
@@ -18,17 +19,24 @@ async function generateUniqueTraits(traitFolders, config) {
 
   while (!uniqueCombination) {
     chosenTraits = [];
-
-    for (const traitFolder of traitFolders) {
-      const traitPath = join(config.traitsFolder, traitFolder);
-      const traitChoices = await readDir(traitPath);
-      const chosenTrait = randomChoice(traitChoices);
-      chosenTraits.push(chosenTrait);
+    let counter = 0;
+    for (const traitFolder of traitFolders) {   
+        const traitPath = join(config.traitsFolder, traitFolder);
+        const traitChoices = await readDir(traitPath);
+        const filteredChoices = traitChoices.filter(c => usedupTraits[counter] ? !usedupTraits[counter].has(c) : true);
+        const chosenTrait = randomChoice(filteredChoices);
+        chosenTraits.push(chosenTrait);
+        counter++;
     }
 
     const key = chosenTraits.join(";");
+    const uniqueConstraint = generatedCombinations.has(key);
+    const traitsConstraint = hasTooManyTraitsAlready(chosenTraits, config.numImages);
+    if(uniqueConstraint){
+      console.log("already have combination: " + key);
+    }
 
-    if (!generatedCombinations.has(key) && !hasTooManyTraitsAlready(chosenTraits, config.numImages)) {
+    if (!uniqueConstraint && !traitsConstraint) {
       uniqueCombination = true;
       generatedCombinations.add(key);
     }
@@ -48,6 +56,8 @@ function hasTooManyTraitsAlready(newTraits, totalNumImages){
       : 0;
     if(count >= maxImages[i]){
       console.log('zu viel ' + newTraits[i] + ' count:' + count + ' max: ' + maxImages[i])
+      usedupTraits[i] = usedupTraits[i] ? usedupTraits[i] : new Set();
+      usedupTraits[i].add(newTraits[i]) 
       return true;
     }
   }
@@ -75,7 +85,7 @@ function weightedRandomPick(choices, percentages){
 
 function normalizeArray(arr) {
   const sum = arr.reduce((a, b) => a + b, 0);
-  return arr.map(x => (x / sum) * 100);
+  return arr.map(x => Math.ceil((x / sum) * 100));
 }
 
 export { generateUniqueTraits }
